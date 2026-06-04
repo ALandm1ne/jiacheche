@@ -16,17 +16,29 @@
 #define PWM_VALUE_MIN   500
 #define PWM_VALUE_MAX   2500
 
-#define PIN_FOREARM   12   // 小臂舵机
-#define PIN_UPPERARM  3    // 大臂舵机
 #define PIN_YAW       8    // yaw舵机
+#define PIN_UPPERARM  3    // 大臂舵机
+#define PIN_FOREARM   12   // 小臂舵机
 #define PIN_GRIPPER   4    // 夹爪舵机
 
-// yaw舵机角度姿态
+// yaw舵机姿态
 #define YAW_ANGLE_LEFT   115  // 左
 #define YAW_ANGLE_RIGHT  47   // 右
 #define YAW_ANGLE_BACK   165  // 后
 
-// 夹爪舵机角度姿态
+// 大臂舵机姿态（这里全都需要重新设置）
+#define UPPERARM_ANGLE_START  90  // 竖直（滑丝损坏，未归零）
+#define UPPERARM_ANGLE_CATCH  0   // 夹取姿态
+#define UPPERARM_ANGLE_LIFT   100 // 抬起姿态
+#define UPPERARM_ANGLE_DROP   20  // 装配姿态
+
+// 小臂舵机姿态（这里也需要全部重新设置）
+#define FOREARM_ANGLE_START  90  // 水平（滑丝损坏，未归零）
+#define FOREARM_ANGLE_CATCH  170 // 夹取姿态
+#define FOREARM_ANGLE_LIFT   145 // 抬起姿态
+#define FOREARM_ANGLE_DROP   120 // 装配姿态
+
+// 夹爪舵机姿态
 #define GRIPPER_ANGLE_OPEN  165  // 张开
 #define GRIPPER_ANGLE_CLOSE 120  // 夹紧
 
@@ -52,34 +64,53 @@ void setup() {
 }
 
 void Pos_init() {
-  yawServo.write(YAW_ANGLE_LEFT);
-
-}
-
-void Pos_begin() {
-  yawServo.write(YAW_ANGLE_LEFT);
   gripperServo.write(GRIPPER_ANGLE_OPEN);
+  delay(1000);
+  yawServo.write(YAW_ANGLE_LEFT);
   forearmServo.write(FOREARM_ANGLE_START);
+  upperarmServo.write(UPPERARM_ANGLE_START);
 }
 
 void Pos_catch() {
+  // 先转到左边打开夹爪
   yawServo.write(YAW_ANGLE_LEFT);
   gripperServo.write(GRIPPER_ANGLE_OPEN);
   delay(1000);
-  forearmServo.write(170);
-  upperarmServo.write(100);
+
+  // 放下大臂和小臂到夹取位置
+  forearmServo.write(FOREARM_ANGLE_CATCH);
+  upperarmServo.write(UPPERARM_ANGLE_CATCH);
   delay(1000);
+
+  // 夹紧夹爪
   gripperServo.write(GRIPPER_ANGLE_CLOSE);
   delay(1000);
-  forearmServo.write(145);
-  upperarmServo.write(180);
 
+  // 抬起大臂和小臂到抬起位置
+  delay(1000);
+  forearmServo.write(FOREARM_ANGLE_LIFT);
+  upperarmServo.write(UPPERARM_ANGLE_LIFT);
+}
+
+void Pos_drop() {
+  // 转到右边
+  yawServo.write(YAW_ANGLE_RIGHT);
+  delay(1000);
+
+  // 放下大臂和小臂到装配位置
+  forearmServo.write(FOREARM_ANGLE_DROP);
+  upperarmServo.write(UPPERARM_ANGLE_DROP);
+  delay(1000);
+
+  // 张开夹爪
+  gripperServo.write(GRIPPER_ANGLE_OPEN);
 }
 
 void loop() {
-  Pos_begin();
-  delay(1000);
+  Pos_init();
+  delay(10000);
   Pos_catch();
-  delay(1000);
-  
+  delay(2000);
+  Pos_drop();
+  delay(2000);
 }
